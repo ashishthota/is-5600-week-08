@@ -2,11 +2,10 @@
 const mongoose = require('mongoose')
 
 mongoose.connect(
-  process.env.MONGODB_URI || 'mongodb://root:example@db:27017/?authSource=admin',
+  process.env.MONGO_URL || 'mongodb+srv://eliseoeric:NxNfSs6jGegIdrXy@cluster0.ldjvhnz.mongodb.net/?retryWrites=true&w=majority', // Note you'll need to put in your own credentials here
   {
     useNewUrlParser: true,
-    useUnifiedTopology: true
   }
-);
+)
 
 module.exports = mongoose
