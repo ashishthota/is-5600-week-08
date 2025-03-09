@@ -1,91 +1,94 @@
 const cuid = require('cuid')
-
 const db = require('./db')
 
-const Order = db.model('Order', {
+// Define our Product Model
+const Product = db.model('Product', {
   _id: { type: String, default: cuid },
-  buyerEmail: { type: String, required: true },
-  products: [{
-    type: String,
-    ref: 'Product', // ref will automatically fetch associated products for us
-    index: true,
-    required: true
+  description: { type: String },
+  alt_description: { type: String },
+  likes: { type: Number, required: true },
+  urls: {
+    regular: { type: String, required: true },
+    small: { type: String, required: true },
+    thumb: { type: String, required: true },
+  },
+  links: {
+    self: { type: String, required: true },
+    html: { type: String, required: true },
+  },
+  user: {
+    id: { type: String, required: true },
+    first_name: { type: String, required: true },
+    last_name: { type: String },
+    portfolio_url: { type: String },
+    username: { type: String, required: true },
+  },
+  tags: [{
+    title: { type: String, required: true },
   }],
-  status: {
-    type: String,
-    index: true,
-    default: 'CREATED',
-    enum: ['CREATED', 'PENDING', 'COMPLETED']
-  }
 })
 
+/**
+ * List products
+ * @param {*} options 
+ * @returns 
+ */
 async function list(options = {}) {
-  const { offset = 0, limit = 25, productId, status } = options;
 
-  const productQuery = productId ? {
-    products: productId
+  const { offset = 0, limit = 25, tag } = options;
+
+  const query = tag ? {
+    tags: {
+      $elemMatch: {
+        title: tag
+      }
+    }
   } : {}
 
-  const statusQuery = status ? {
-    status: status,
-  } : {}
-
-  const query = {
-    ...productQuery,
-    ...statusQuery
-  };
-
-  const orders = await Order.find(query)
+  const products = await Product.find(query)
     .sort({ _id: 1 })
     .skip(offset)
     .limit(limit)
-
-  return orders
-}
-
-
-
-/**
- * Get an order
- * @param {Object} order
- * @returns {Promise<Object>}
- */
-async function get(_id) {
-  // using populate will automatically fetch the associated products.
-  // if you don't use populate, you will only get the product ids
-  const order = await Order.findById(_id)
-    .populate('products')
     .exec()
 
-  return order
+  return products
+}
+
+/**
+ * Get a single product
+ * @param {string} id
+ * @returns {Promise<object>}
+ */
+async function get(_id) {
+  const product = await Product.findById(_id)
+  return product
+}
+
+async function create(fields) {
+  const product = await new Product(fields).save()
+  return product
 }
 
 async function edit(_id, change) {
-  const order = await get(_id)
+  const product = await get(_id)
 
   Object.keys(change).forEach(function(key) {
-    order[key] = change[key]
+    product[key] = change[key]
   })
 
-  await order.save()
+  await product.save()
 
-  return order
+  return product
 }
 
-/**
- * Create an order
- * @param {Object} order
- * @returns {Promise<Object>}
- */
-async function create(fields) {
-  const order = await new Order(fields).save()
-  await order.populate('products')
-  return order
+async function destroy(_id) {
+  return await Product.deleteOne({ _id })
 }
 
 module.exports = {
-  create,
-  get,
   list,
-  edit
+  create,
+  edit,
+  destroy,
+  get
 }
